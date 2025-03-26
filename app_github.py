@@ -71,9 +71,15 @@ def initialize_system():
             temperature=0,
             api_key=system["groq_api_key"]
         )
+        # ADD THIS SECTION FOR QA CHAIN
+        system["qa_chain"] = load_qa_chain(
+            system["llm"], 
+            chain_type="map_reduce"
+        )
     except Exception as e:
         st.error(f"LLM initialization failed: {str(e)}")
         system["llm"] = None
+        system["qa_chain"] = None  # Add fallback
 
     return system
 # --------------------------
