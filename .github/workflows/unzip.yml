@@ -1,0 +1,26 @@
+name: Unzip VectorDB
+on: [push]
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }} # Use your secret here
+
+      - name: Unzip databases
+        run: |
+          mkdir -p vector_db
+          unzip "vectorDB/parts_data_vectorDB.zip" -d vector_db/parts_db
+          unzip "vectorDB/service_data_vectorDB.zip" -d vector_db/service_db
+
+      - name: Commit changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add vector_db/
+          git commit -m "Auto-unzip vector DBs" || echo "No changes"
+          git push origin HEAD:main
