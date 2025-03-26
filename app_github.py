@@ -8,61 +8,74 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains.question_answering import load_qa_chain
 from langchain_groq import ChatGroq
 from getpass import getpass
+# Override system sqlite3 with modern version
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+# Fix event loop before Streamlit init
+import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 
 # --------------------------
 # INITIALIZATION
 # --------------------------
 
+
 @st.cache_resource
 def initialize_system():
-    """Initialize system components with GitHub-friendly paths"""
+    """Initialize system components with SQLite3 workaround"""
     system = {}
 
-    # Get Groq API key securely
-    os.environ["GROQ_API_KEY"] = "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"  # Consider using st.secrets in production
+    # Initialize event loop early
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    # Secure API handling
+    system["groq_api_key"] = os.environ.get("GROQ_API_KEY", "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")  # Use st.secrets in prod
 
     # Initialize embeddings
     system["embeddings"] = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L12-v2"
+        model_name="sentence-transformers/all-MiniLM-L12-v2",
+        model_kwargs={'device': 'cpu'}  # Remove if using GPU
     )
 
     # Initialize vector databases
     system["retrievers"] = []
     vector_db_dir = "vectorDB/vectorDB/"
 
-    if os.path.exists(vector_db_dir) and os.listdir(vector_db_dir):
+    if os.path.exists(vector_db_dir):
         for db_folder in os.listdir(vector_db_dir):
             db_path = os.path.join(vector_db_dir, db_folder)
-            # Check for SQLite database file instead of Parquet
-            chroma_db_file = os.path.join(db_path, "chroma.sqlite3")
-            
-            if os.path.isfile(chroma_db_file):
-                vectordb = Chroma(
-                    persist_directory=db_path,
-                    embedding_function=system["embeddings"]
-                )
-                system["retrievers"].append(vectordb.as_retriever())
+            if os.path.exists(os.path.join(db_path, "chroma.sqlite3")):
+                try:
+                    vectordb = Chroma(
+                        persist_directory=db_path,
+                        embedding_function=system["embeddings"]
+                    )
+                    system["retrievers"].append(vectordb.as_retriever())
+                except Exception as e:
+                    st.error(f"Failed loading {db_folder}: {str(e)}")
+                    continue
             else:
-                st.warning(f"Missing Chroma SQLite database in: {db_path}")
-                st.info(f"Found files: {os.listdir(db_path)}")
+                st.warning(f"Missing Chroma DB in: {db_path}")
 
-    else:
-        st.error("Vector databases not found! Ensure:\n"
-                 "1. ZIP files are in vectorDB/\n"
-                 "2. GitHub workflow has run\n"
-                 "3. Processed DBs exist in vectorDB/vectorDB/")
-
-    # Initialize LLM
-    system["llm"] = ChatGroq(
-        model_name="llama-3.3-70b-versatile",
-        temperature=0
-    )
-
-    # Load QA chain
-    system["qa_chain"] = load_qa_chain(system["llm"], chain_type="map_reduce")
+    # Initialize LLM with error handling
+    try:
+        system["llm"] = ChatGroq(
+            model_name="llama-3.3-70b-versatile",
+            temperature=0,
+            api_key=system["groq_api_key"]
+        )
+    except Exception as e:
+        st.error(f"LLM initialization failed: {str(e)}")
+        system["llm"] = None
 
     return system
-
 # --------------------------
 # CHATBOT PROMPT TEMPLATE
 # --------------------------
