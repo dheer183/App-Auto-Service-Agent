@@ -1,26 +1,58 @@
-name: Unzip VectorDB
+name: Auto-Unzip VectorDB
 on: [push]
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for pushing changes back
+      
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT }} # Use your secret here
+          token: ${{ secrets.PAT }}  # Personal Access Token with repo access
 
-      - name: Unzip databases
+      - name: Set up directories
         run: |
+          mkdir -p vectorDB
           mkdir -p vector_db
-          unzip "vectorDB/parts_data_vectorDB.zip" -d vector_db/parts_db
-          unzip "vectorDB/service_data_vectorDB.zip" -d vector_db/service_db
 
-      - name: Commit changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+      - name: Unzip all files dynamically
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Files in vectorDB/: $(ls -R vectorDB/)"
+          
+          # Python script to handle unzipping
+          python3 - <<EOF
+          import os
+          import zipfile
+
+          zip_dir = "./vectorDB"
+          extract_path = "./vector_db"
+
+          for file_name in os.listdir(zip_dir):
+              if file_name.endswith(".zip"):
+                  zip_path = os.path.join(zip_dir, file_name)
+                  print(f"Extracting {zip_path}...")
+                  
+                  try:
+                      with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                          # Create subfolder using zip filename (without .zip)
+                          output_folder = os.path.join(extract_path, os.path.splitext(file_name)[0])
+                          os.makedirs(output_folder, exist_ok=True)
+                          zip_ref.extractall(output_folder)
+                      print(f"Extracted to {output_folder}")
+                  except zipfile.BadZipFile:
+                      print(f"⚠️ Corrupted ZIP file: {file_name}")
+                  except Exception as e:
+                      print(f"🚨 Error with {file_name}: {str(e)}")
+          EOF
+
+      - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add vector_db/
-          git commit -m "Auto-unzip vector DBs" || echo "No changes"
-          git push origin HEAD:main
+          git commit -m "Auto-unzipped vector databases" || echo "No changes to commit"
+          git push origin HEAD:$GITHUB_REF
