@@ -1,37 +1,54 @@
-name: Structured Unzip
+name: Structured VectorDB Unzip
 on: [push]
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      
+      contents: write  # Required for committing changes back
+    
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.PAT }}  # Personal Access Token with repo permissions
 
       - name: Create directory structure
         run: |
+          # Create parent directories
           mkdir -p vectorDB
           mkdir -p vector_db/{parts_data,service_data}
 
-      - name: Unzip with structured paths
+          # Verify directory creation
+          echo "Directory structure:"
+          tree -d || true
+
+      - name: Process ZIP files
         run: |
-          echo "Unzipping with folder structure..."
-          
-          # Unzip parts_data
-          unzip vectorDB/parts_data_vectorDB.zip -d vector_db/parts_data
-          
-          # Unzip service_data
-          unzip vectorDB/service_data_vectorDB.zip -d vector_db/service_data
+          echo "=== Contents of vectorDB/ ==="
+          ls -lh vectorDB/
+
+          # Unzip with forced directory structure
+          echo "Processing parts_data..."
+          unzip -o vectorDB/parts_data_vectorDB.zip -d vector_db/parts_data
+
+          echo "Processing service_data..."
+          unzip -o vectorDB/service_data_vectorDB.zip -d vector_db/service_data
+
+          # Verify extraction
+          echo "=== Final structure ==="
+          tree vector_db || true
 
       - name: Commit changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          
+          # Only commit if there are changes
           git add vector_db/
-          git commit -m "Auto-unzipped structured databases"
-          git push origin HEAD:main
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-unzipped vector databases"
+            git push origin HEAD:$GITHUB_REF
+          fi
