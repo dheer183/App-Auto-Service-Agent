@@ -28,7 +28,7 @@ def initialize_system():
 
     # Initialize vector databases
     system["retrievers"] = []
-    vector_db_dir = "vectorDB/vectorDB/"  # Corrected GitHub path
+    vector_db_dir = "vectorDB/vectorDB/content/"  # Corrected GitHub path
 
     if os.path.exists(vector_db_dir) and os.listdir(vector_db_dir):
         for db_folder in os.listdir(vector_db_dir):
