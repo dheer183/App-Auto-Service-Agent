@@ -29,20 +29,20 @@ jobs:
           echo "=== Processing Parts Data ==="
           unzip -o vectorDB/parts_data_vectorDB.zip -d tmp_unzip
           mv tmp_unzip/content/parts_data vectorDB/vectorDB/
-          [ -f vectorDB/vectorDB/parts_data/chroma-collections.parquet ] || exit 1
+          [ -f vectorDB/vectorDB/parts_data/chroma.sqlite3 ] || exit 1
 
           # Process Service Data
           echo "=== Processing Service Data ==="
           unzip -o vectorDB/service_data_vectorDB.zip -d tmp_unzip
           mv tmp_unzip/content/service_data vectorDB/vectorDB/
-          [ -f vectorDB/vectorDB/service_data/chroma-collections.parquet ] || exit 1
+          [ -f vectorDB/vectorDB/service_data/chroma.sqlite3 ] || exit 1
 
           # Cleanup and verify
           rm -rf tmp_unzip
           echo "=== Final Validation ==="
           ls -lR vectorDB/vectorDB/
-          [ -f vectorDB/vectorDB/parts_data/chroma-collections.parquet ] && \
-          [ -f vectorDB/vectorDB/service_data/chroma-collections.parquet ] || exit 1
+          [ -f vectorDB/vectorDB/parts_data/chroma.sqlite3 ] && \
+          [ -f vectorDB/vectorDB/service_data/chroma.sqlite3 ] || exit 1
 
       - name: Commit Validated Databases
         run: |
@@ -51,7 +51,7 @@ jobs:
           
           git add vectorDB/vectorDB/
           if ! git diff-index --quiet HEAD --; then
-            git commit -m "Added validated vector databases: $(date +%Y-%m-%d)"
+            git commit -m "Added validated SQLite vector databases: $(date +%Y-%m-%d)"
             git push origin HEAD:$GITHUB_REF
           else
             echo "No changes to commit"
