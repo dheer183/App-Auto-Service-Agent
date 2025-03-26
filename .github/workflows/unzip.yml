@@ -13,26 +13,32 @@ jobs:
         with:
           token: ${{ secrets.PAT }}
 
-      - name: Create directory structure
+      - name: Create target directory
         run: |
-          # Create nested target directory
           mkdir -p vectorDB/vectorDB
-          echo "Directory structure:"
+          echo "Directory structure created:"
           tree -d || true
 
       - name: Process ZIP files
         run: |
-          echo "=== Contents of vectorDB/ ==="
+          echo "=== Initial Contents of vectorDB/ ==="
           ls -lh vectorDB/
 
-          # Unzip directly into nested directory
+          # Create temporary extraction directory
+          mkdir -p temp_extract
+
           echo "Processing parts_data..."
-          unzip -o vectorDB/parts_data_vectorDB.zip -d vectorDB/vectorDB
+          unzip -o vectorDB/parts_data_vectorDB.zip -d temp_extract
+          mv temp_extract/content/parts_data vectorDB/vectorDB/
 
           echo "Processing service_data..."
-          unzip -o vectorDB/service_data_vectorDB.zip -d vectorDB/vectorDB
+          unzip -o vectorDB/service_data_vectorDB.zip -d temp_extract
+          mv temp_extract/content/service_data vectorDB/vectorDB/
 
-          echo "=== Final structure ==="
+          # Cleanup temporary files
+          rm -rf temp_extract
+
+          echo "=== Final Structure ==="
           tree vectorDB/vectorDB || true
 
       - name: Commit changes
