@@ -5,21 +5,18 @@ jobs:
   unzip:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for committing changes back
+      contents: write
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT }}  # Personal Access Token with repo permissions
+          token: ${{ secrets.PAT }}
 
       - name: Create directory structure
         run: |
-          # Create parent directories
-          mkdir -p vectorDB
-          mkdir -p vector_db/{parts_data,service_data}
-
-          # Verify directory creation
+          # Create nested target directory
+          mkdir -p vectorDB/vectorDB
           echo "Directory structure:"
           tree -d || true
 
@@ -28,27 +25,25 @@ jobs:
           echo "=== Contents of vectorDB/ ==="
           ls -lh vectorDB/
 
-          # Unzip with forced directory structure
+          # Unzip directly into nested directory
           echo "Processing parts_data..."
-          unzip -o vectorDB/parts_data_vectorDB.zip -d vector_db/parts_data
+          unzip -o vectorDB/parts_data_vectorDB.zip -d vectorDB/vectorDB
 
           echo "Processing service_data..."
-          unzip -o vectorDB/service_data_vectorDB.zip -d vector_db/service_data
+          unzip -o vectorDB/service_data_vectorDB.zip -d vectorDB/vectorDB
 
-          # Verify extraction
           echo "=== Final structure ==="
-          tree vector_db || true
+          tree vectorDB/vectorDB || true
 
       - name: Commit changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          # Only commit if there are changes
-          git add vector_db/
+          git add vectorDB/vectorDB/
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit"
           else
-            git commit -m "Auto-unzipped vector databases"
+            git commit -m "Auto-unzipped vector databases into vectorDB/vectorDB"
             git push origin HEAD:$GITHUB_REF
           fi
