@@ -28,28 +28,21 @@ def initialize_system():
 
     # Initialize vector databases
     system["retrievers"] = []
-    vector_db_dir = "vectorDB/vectorDB/content/"  # Corrected GitHub path
+    vector_db_dir = "vectorDB/vectorDB/"   # Corrected GitHub path
 
     if os.path.exists(vector_db_dir) and os.listdir(vector_db_dir):
         for db_folder in os.listdir(vector_db_dir):
             db_path = os.path.join(vector_db_dir, db_folder)
-            if os.path.isdir(db_path):
-                # Validate Chroma directory before loading
-                if os.path.exists(os.path.join(db_path, "chroma-collections.parquet")):
-                    vectordb = Chroma(
-                        persist_directory=db_path,
-                        embedding_function=system["embeddings"]
-                    )
-                    system["retrievers"].append(vectordb.as_retriever())
-                else:
-                    st.warning(f"Skipping invalid Chroma directory: {db_path}")
-    else:
-        st.error("No vector databases found! Ensure:\n"
-                 "1. ZIP files are in vectorDB/ directory\n"
-                 "2. GitHub workflow has run\n"
-                 "3. Processed DBs exist in vectorDB/vectorDB/")
-
-    return system
+            chroma_file = os.path.join(db_path, "chroma-collections.parquet")
+            
+            if os.path.isfile(chroma_file):
+                vectordb = Chroma(
+                    persist_directory=db_path,
+                    embedding_function=system["embeddings"]
+                )
+                system["retrievers"].append(vectordb.as_retriever())
+            else:
+                st.warning(f"Missing Chroma files in: {db_path}")
 
     # Initialize LLM
     system["llm"] = ChatGroq(
