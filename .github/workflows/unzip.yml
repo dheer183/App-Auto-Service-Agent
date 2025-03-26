@@ -1,58 +1,37 @@
-name: Auto-Unzip VectorDB
+name: Structured Unzip
 on: [push]
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for pushing changes back
+      contents: write
       
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT }}  # Personal Access Token with repo access
+          token: ${{ secrets.PAT }}
 
-      - name: Set up directories
+      - name: Create directory structure
         run: |
           mkdir -p vectorDB
-          mkdir -p vector_db
+          mkdir -p vector_db/{parts_data,service_data}
 
-      - name: Unzip all files dynamically
+      - name: Unzip with structured paths
         run: |
-          echo "Current directory: $(pwd)"
-          echo "Files in vectorDB/: $(ls -R vectorDB/)"
+          echo "Unzipping with folder structure..."
           
-          # Python script to handle unzipping
-          python3 - <<EOF
-          import os
-          import zipfile
+          # Unzip parts_data
+          unzip vectorDB/parts_data_vectorDB.zip -d vector_db/parts_data
+          
+          # Unzip service_data
+          unzip vectorDB/service_data_vectorDB.zip -d vector_db/service_data
 
-          zip_dir = "./vectorDB"
-          extract_path = "./vector_db"
-
-          for file_name in os.listdir(zip_dir):
-              if file_name.endswith(".zip"):
-                  zip_path = os.path.join(zip_dir, file_name)
-                  print(f"Extracting {zip_path}...")
-                  
-                  try:
-                      with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                          # Create subfolder using zip filename (without .zip)
-                          output_folder = os.path.join(extract_path, os.path.splitext(file_name)[0])
-                          os.makedirs(output_folder, exist_ok=True)
-                          zip_ref.extractall(output_folder)
-                      print(f"Extracted to {output_folder}")
-                  except zipfile.BadZipFile:
-                      print(f"⚠️ Corrupted ZIP file: {file_name}")
-                  except Exception as e:
-                      print(f"🚨 Error with {file_name}: {str(e)}")
-          EOF
-
-      - name: Commit and push changes
+      - name: Commit changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add vector_db/
-          git commit -m "Auto-unzipped vector databases" || echo "No changes to commit"
-          git push origin HEAD:$GITHUB_REF
+          git commit -m "Auto-unzipped structured databases"
+          git push origin HEAD:main
