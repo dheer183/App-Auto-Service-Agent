@@ -1,0 +1,13 @@
+# --------------------------
+# REQUIREMENTS
+# --------------------------
+
+streamlit
+chromadb>=0.4.22
+langchain-chroma
+langchain-community
+langchain-groq
+sentence-transformers
+huggingface_hub
+python-dotenv
+numpy==1.26.4
