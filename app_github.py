@@ -19,7 +19,7 @@ def initialize_system():
     system = {}
 
     # Get Groq API key securely
-    os.environ["GROQ_API_KEY"] = "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"
+    os.environ["GROQ_API_KEY"] = "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"  # Consider using st.secrets in production
 
     # Initialize embeddings
     system["embeddings"] = HuggingFaceEmbeddings(
@@ -28,21 +28,29 @@ def initialize_system():
 
     # Initialize vector databases
     system["retrievers"] = []
-    vector_db_dir = "vectorDB/vectorDB/"   # Corrected GitHub path
+    vector_db_dir = "vectorDB/vectorDB/"
 
     if os.path.exists(vector_db_dir) and os.listdir(vector_db_dir):
         for db_folder in os.listdir(vector_db_dir):
             db_path = os.path.join(vector_db_dir, db_folder)
-            chroma_file = os.path.join(db_path, "chroma-collections.parquet")
+            # Check for SQLite database file instead of Parquet
+            chroma_db_file = os.path.join(db_path, "chroma.sqlite3")
             
-            if os.path.isfile(chroma_file):
+            if os.path.isfile(chroma_db_file):
                 vectordb = Chroma(
                     persist_directory=db_path,
                     embedding_function=system["embeddings"]
                 )
                 system["retrievers"].append(vectordb.as_retriever())
             else:
-                st.warning(f"Missing Chroma files in: {db_path}")
+                st.warning(f"Missing Chroma SQLite database in: {db_path}")
+                st.info(f"Found files: {os.listdir(db_path)}")
+
+    else:
+        st.error("Vector databases not found! Ensure:\n"
+                 "1. ZIP files are in vectorDB/\n"
+                 "2. GitHub workflow has run\n"
+                 "3. Processed DBs exist in vectorDB/vectorDB/")
 
     # Initialize LLM
     system["llm"] = ChatGroq(
