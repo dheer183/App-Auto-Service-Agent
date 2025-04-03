@@ -73,7 +73,7 @@ def initialize_system():
         )
         # ADD THIS SECTION FOR QA CHAIN
         system["qa_chain"] = load_qa_chain(
-            system["llm"], 
+            system["llm"],
             chain_type="map_reduce"
         )
     except Exception as e:
@@ -131,8 +131,8 @@ Engine Size: {engine}
 def main():
     # Must be first Streamlit command
     st.set_page_config(
-        page_title="AutoCare Assistant",
-        page_icon="🚗",
+        page_title="Auto Service Advisor",
+        page_icon="🤖",
         layout="wide"
     )
 
@@ -152,7 +152,7 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             st.session_state.vehicle_info["make"] = st.text_input("Make (e.g., Toyota)", value=st.session_state.vehicle_info["make"])
-            st.session_state.vehicle_info["year"] = st.number_input("Year", min_value=1900, max_value=2024, step=1, value=2000 if not st.session_state.vehicle_info["year"] else st.session_state.vehicle_info["year"])
+            st.session_state.vehicle_info["year"] = st.number_input("Year", min_value=1999, max_value=2001, step=1, value=2000 if not st.session_state.vehicle_info["year"] else st.session_state.vehicle_info["year"])
         with col2:
             st.session_state.vehicle_info["model"] = st.text_input("Model (e.g., Camry)", value=st.session_state.vehicle_info["model"])
             st.session_state.vehicle_info["engine"] = st.text_input("Engine Size (e.g., 2.5L)", value=st.session_state.vehicle_info["engine"])
