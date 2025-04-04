@@ -158,7 +158,7 @@ def main():
             st.session_state.vehicle_info["engine"] = st.text_input("Engine Size (e.g., 2.5L)", value=st.session_state.vehicle_info["engine"])
 
     # Main chat interface
-    st.title("AutoCare Diagnostic Assistant")
+    st.title("Auto Service Assistant")
 
     # Display chat messages
     for message in st.session_state.messages:
